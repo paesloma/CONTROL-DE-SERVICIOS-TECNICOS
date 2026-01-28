@@ -25,18 +25,10 @@ def generar_excel(dataframe, col_tech):
                 cell.font = Font(color='FFFFFF', bold=True)
     return output.getvalue()
 
-def generar_txt_mensaje(taller, total_pedidos, df_critico, c_orden, c_prod):
-    # Crear lista de "Orden - Producto"
-    lista_detallada = []
-    for _, fila in df_critico.iterrows():
-        lista_detallada.append(f"#{fila[c_orden]} ({fila[c_prod]})")
-    
-    ordenes_texto = ", ".join(lista_detallada)
-    n_criticos = len(df_critico)
-    
+def generar_txt_mensaje(taller, total_pedidos, n_criticos):
     mensaje = f"""Estimados {taller}:
 
-Reciban un cordial saludo, el presente mensaje es para consultarles el estado de las siguientes ordenes de servicio pendientes ({total_pedidos}), en especial informacion de las siguientes ordenes ({n_criticos} ordenes críticas: {ordenes_texto}) a la favorable atencion de la presente y comentarios sobre las ordenes agradezco su atencion.
+Reciban un cordial saludo, el presente mensaje es para consultarles el estado de las siguientes ordenes de servicio pendientes ({total_pedidos}), en especial informacion de las siguientes ordenes ({n_criticos} ordenes críticas) a la favorable atencion de la presente y comentarios sobre las ordenes agradezco su atencion.
 
 Atentamente,
 Departamento Postventa Gerardo Ortiz"""
@@ -47,7 +39,7 @@ hoy = datetime.now()
 st.markdown(f"""
     <div style="background: linear-gradient(90deg, #1F4E78 0%, #2E75B6 100%); padding: 20px; border-radius: 15px; color: white; text-align: center; margin-bottom: 20px;">
         <h1>🛠️ GESTIÓN DE POSTVENTA Y COMUNICACIONES</h1>
-        <p>Reportes Individuales y Mensajes con Detalle de Producto | {hoy.strftime("%d/%m/%Y")}</p>
+        <p>Resumen de Órdenes Pendientes y Críticas | {hoy.strftime("%d/%m/%Y")}</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -92,7 +84,6 @@ if uploaded_file is not None:
             for taller in df_filtrado[c_tech].unique():
                 sub = df_filtrado[df_filtrado[c_tech] == taller]
                 n_criticos = sub['Es_Critico'].sum()
-                df_critico = sub[sub['Es_Critico'] == True][[c_orden, c_prod]]
                 
                 label = f"{'🏢' if taller.upper().startswith('GO') else '🔧'} {taller} ({len(sub)} órdenes)"
                 if n_criticos > 0: label += f" | 🚩 {n_criticos} CRÍTICOS"
@@ -105,7 +96,8 @@ if uploaded_file is not None:
                         st.download_button(f"📥 Excel de {taller}", data_excel, f"Reporte_{taller}.xlsx", key=f"ex_{taller}")
                     
                     with col2:
-                        texto_mensaje = generar_txt_mensaje(taller, len(sub), df_critico, c_orden, c_prod)
+                        # MENSAJE SIMPLIFICADO
+                        texto_mensaje = generar_txt_mensaje(taller, len(sub), n_criticos)
                         st.download_button(f"📄 Generar Mensaje (TXT)", texto_mensaje, f"Mensaje_{taller}.txt", key=f"txt_{taller}")
                     
                     st.dataframe(sub[cols_finales], hide_index=True, use_container_width=True)
